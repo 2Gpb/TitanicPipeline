@@ -1,0 +1,3 @@
+general:
+  experiment_name: first
+  seed: 42
