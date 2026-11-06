@@ -1,3 +1,12 @@
 general:
-  experiment_name: first
+  experiment_name: logreg_baseline_v1
   seed: 42
+data:
+  train_path: raw_data/train.csv
+  test_path: raw_data/test.csv
+  target: Survived
+  id_column: PassengerId
+  test_size: 0.25
+preprocessing:
+  drop_columns: [Name, Ticket, Cabin]
+  scale: true
