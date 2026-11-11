@@ -226,3 +226,6 @@ pyrightconfig.json
 .ionide
 
 raw_data/
+
+catboost_info
+submissions

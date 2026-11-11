@@ -1,12 +1,117 @@
 general:
-  experiment_name: logreg_baseline_v1
+  experiment_name: mlp_v6
   seed: 42
 data:
   train_path: raw_data/train.csv
   test_path: raw_data/test.csv
   target: Survived
   id_column: PassengerId
-  test_size: 0.25
 preprocessing:
-  drop_columns: [Name, Ticket, Cabin]
+  drop_columns:
+  - Name
+  - Ticket
+  - Cabin
   scale: true
+  pclass_ohe: true
+  embarked_ohe: true
+  embarked_fill: unknown
+  use_embeddings: false
+features:
+  family_group: false
+  cabin_known: false
+  age_missing: false
+validation:
+  test_size: 0.25
+  use_cv: true
+  n_splits: 5
+tuning:
+  enabled: false
+  n_trials: 30
+model:
+  name: mlp
+model_params:
+  logistic_regression:
+    C: 0.022941879158967466
+    solver: lbfgs
+    max_iter: 5000
+  decision_tree:
+    max_depth: 4
+    min_samples_leaf: 5
+    min_samples_split: 15
+    criterion: entropy
+    ccp_alpha: 0.01
+  random_forest:
+    bootstrap: true
+    n_estimators: 300
+    max_depth: null
+    min_samples_leaf: 1
+    min_samples_split: 12
+    criterion: gini
+    max_features: 0.5
+    class_weight: null
+    ccp_alpha: 0.001
+    max_samples: 0.9416427000505124
+  knn:
+    n_neighbors: 7
+    weights: uniform
+    p: 1
+  cat_boost:
+    iterations: 1000
+    depth: 6
+  lightgbm:
+    max_depth: 5
+    n_estimators: 500
+    learning_rate: 0.02142290514299836
+    num_leaves: 23
+    min_child_samples: 27
+    colsample_bytree: 0.6897243752201568
+    reg_alpha: 0.08819067774470501
+    reg_lambda: 0.013943332610388649
+  xgboost:
+    max_depth: 3
+    n_estimators: 100
+    objective: binary:logistic
+    min_child_weight: 7
+  mlp:
+    hidden_size: 128
+    n_layers: 1
+    activation: gelu
+    batch_norm: true
+    epochs: 100
+    batch_size: 64
+    learning_rate: 0.001
+    use_scheduler: true
+    min_lr: 0.00001
+    optimizer: adamw
+    weight_decay: 0.01
+    momentum: 0.9
+    embedding_dim: 4
+    dropout: 0.3
+ensemble:
+  enabled: false
+  method: hard_voting
+  stacking:
+    inner_splits: 3
+    meta_model: ridge
+    meta_params:
+      ridge:
+        alpha: 1.0
+      linear_regression: {}
+      logistic_regression:
+        C: 1.0
+        max_iter: 1000
+  members:
+    xgboost:
+      preprocessing:
+        use_embeddings: false
+        scale: false
+        pclass_ohe: false
+        embarked_ohe: false
+    lightgbm:
+      preprocessing:
+        use_embeddings: false
+        scale: false
+    cat_boost:
+      preprocessing:
+        use_embeddings: false
+        scale: false

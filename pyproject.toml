@@ -1,7 +1,7 @@
 [project]
 name = "titanic"
 version = "0.1.0"
-description = "Add your description here"
+description = "Kaggle Titanic classification pipeline: classic ML, boosting, MLP and ensembles"
 readme = "README.md"
 authors = [
     { name = "Tyukhmenev Petr", email = "Pvtyukhmenev@gmail.com" }
@@ -9,8 +9,12 @@ authors = [
 requires-python = ">=3.11"
 dependencies = [
     "catboost>=1.2.10",
+    "lightgbm>=4.7.0",
     "matplotlib>=3.11.2",
     "omegaconf>=2.4.0",
+    "optuna>=5.0.0",
     "pandas>=3.1.0",
     "scikit-learn>=1.9.1",
+    "torch>=2.15.0",
+    "xgboost>=3.2.0",
 ]
