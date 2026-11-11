@@ -4,12 +4,45 @@ A project for the Kaggle competition [Titanic — Machine Learning from Disaster
 
 Place `train.csv` and `test.csv` in the `raw_data/` directory at the project root.
 To run the pipeline from the project root, execute `uv sync --locked`, then `uv run --locked python src/main.py`.
+EDA and the first baseline are in `notebooks/draft.ipynb`.
+
+## How the pipeline works
+
+Everything starts from `src/main.py`. It reads `src/configs/config.yml` and calls `run()` from `src/train/train.py`. Depending on the config, it trains one model (with Optuna if tuning is on) or an ensemble.
+
+- `data/dataset.py` loads the data and does all preprocessing: new features, missing values, category encoding for each model type, scaling. Everything is fitted only on the train fold.
+- `data/neural.py` makes tensors and data loaders for the MLP.
+- `models/classic.py` has the sklearn models and boostings, `models/neural.py` has the MLP with a sklearn-style wrapper, and `models/factory.py` picks one of them by name.
+- `train/validation.py` runs holdout or stratified 5-fold CV. Test predictions are averaged over the fold models.
+- `train/tuning.py` runs Optuna, with a separate search space for each model.
+- `train/ensemble.py` does soft and hard voting on the same folds, `train/stacking.py` does stacking with nested CV.
+- `utils/submission.py` saves the submission to `submissions/<experiment_name>.csv`.
+
+To run another experiment I only change the config: model and its params, preprocessing flags, features, ensemble on/off. Right now the config is set to `mlp_v6`, which has the best public score.
+
+## Weak spots
+
+I know about these and will fix them in the next project:
+
+- CV after Optuna is too optimistic, because params were tuned and scored on the same folds. Ensemble members were also picked by this CV.
+- CV is 0.82–0.85, public is 0.76–0.79. Fold SD is about 0.015–0.02, and the test has only 418 rows (one passenger is about 0.24% accuracy), so most of the difference between models is noise. The best public model is mostly luck.
+- Stacking uses Ridge as the meta model, which is just linear regression on a 0/1 target with a 0.5 threshold. Logistic regression fits classification better. It's supported in the code, but I didn't run it.
+- `preprocess_data` branches by model name, so the data part knows about models. This is the messiest part of the code.
+- Titanic columns are hardcoded (Sex mapping, FamilyGroup, Embarked/Pclass). For another dataset they should be moved to the config.
+- Some early results can't be reproduced exactly. Preprocessing changed a bit during the experiments, and I rewrote the Optuna search space for each model. Next time I'll save the code state together with each result.
+- Metrics are only printed, so I filled in the table by hand.
+
+## Summary
+
+This project isn't about getting the best possible score in this competition. It's a first version of a pipeline for quickly trying out ideas in competitions. The idea is that the core can be reused, and for a new competition you mostly change the data part and the config. The pipeline will definitely get better over time, the main gaps are listed in Weak spots above.
+
+Below are the results after simple preprocessing and trying different models with different hyperparameters. To improve the score, you need to dig into the data a bit deeper. As I understand it, the main thing is to pull something out of the text columns I dropped in my simple version (Name, Ticket, Cabin), or really anything else you can experiment with :)
 
 | Experiment                 | Model and setup                                                                                                                                                                                  | Local CV accuracy ± SD | Public accuracy |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------: | --------------: |
 | logreg_baseline_fe_v1      | LogReg, default parameters; median/mode imputation, OHE, scaling; excluding Name/Ticket/Cabin; seed=42                                                                                           | 0.79687 ± 0.01457      | 0.76555         |
 | logreg_baseline_fe_v2      | LogReg + feature engineering: Pclass OHE, family groups replacing SibSp/Parch, cabin_known, age_missing; Unknown Embarked; scaling; seed=42                                                      | 0.81595 ± 0.02219      | 0.75837         |
-| logreg_baseline_v2_optuna  | LogReg + feature engineering + Optuna; C=0.022941879158967466, class_weight=None                                                                                                                 | 0.82157 ± 0,01804      | 0.76555         |
+| logreg_baseline_v2_optuna  | LogReg + feature engineering + Optuna; C=0.022941879158967466, class_weight=None                                                                                                                 | 0.82157 ± 0.01804      | 0.76555         |
 | decision_tree_fe_v1        | DecisionTree + feature engineering; max_depth=3, min_samples_leaf=5; no scaling; no tuning; seed=42                                                                                              | 0.80920 ± 0.02711      | 0.78708         |
 | decision_tree_fe_v1_optuna | DecisionTree + feature engineering + Optuna; max_depth=4, min_samples_leaf=5, min_samples_split=15, criterion=entropy, max_features=None, class_weight=None, ccp_alpha=0.01; no scaling; seed=42 | 0.82043 ± 0.01414      | 0.78229         |
 | decision_tree_v2_optuna    | DecisionTree, Optuna-selected parameters; family_group/cabin_known/age_missing disabled; Pclass OHE; no scaling; seed=42                                                                         | 0.82153 ± 0.01942      | 0.78229         |
